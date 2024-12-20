@@ -2,7 +2,12 @@ library(dplyr)
 library(lubridate)
 library(excessmort)
 library(ggplot2)
-excess_mort_pdf <- read.csv("~/Desktop/Harvard/Courses/BST260/Project/excess_mort.csv") # 2015, 2016, 2017
+
+str(puerto_rico_counts)
+dim(puerto_rico_counts)
+
+setwd("~/Downloads/bst260-final/code")
+excess_mort_pdf <- read.csv("./../data/excess_mort.csv") # 2015, 2016, 2017
 
 month_lookup <- c("JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6,
                   "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT*" = 10, "NOV" = 11, "DEC" = 12)
@@ -25,6 +30,16 @@ excess_mort_15_17 <- puerto_rico_counts |> mutate(date = as.Date(date)) |>
 
 excess_mort_pdf$count == excess_mort_15_17$outcome
 excess_mort_pdf$count - excess_mort_15_17$outcome
+
+comparison_table <- excess_mort_15_17
+colnames(comparison_table)[colnames(excess_mort_15_17) == "outcome"] <- "excessmort_count"
+comparison_table$NYT_count <- c(excess_mort_pdf$count)
+comparison_table$count_diff <- comparison_table$excessmort_count - comparison_table$NYT_count
+totals <- colSums(comparison_table)
+comparison_table <- rbind(comparison_table, totals)
+comparison_table[nrow(comparison_table), 1:2] <- NA
+View(comparison_table)
+
 
 str(excess_mort_15_17)
 colnames(excess_mort_pdf) 

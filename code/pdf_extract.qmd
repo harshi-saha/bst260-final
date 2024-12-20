@@ -7,11 +7,11 @@ editor: visual
 ```{r}
 #install.packages("pdftools") 
 require(pdftools)           
-
+setwd("~/Downloads/bst260-final/code")
 ```
 
 ```{r}
-pdf_text_data <- pdf_text("~/Downloads/Mortalidad-RegDem-2015-17-NYT-part1.pdf")
+pdf_text_data <- pdf_text("./../data/Mortalidad-RegDem-2015-17-NYT-part1.pdf")
 pdf_text_data
 ```
 

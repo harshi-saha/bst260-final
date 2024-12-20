@@ -14,8 +14,29 @@ Harshi Saha, Jurijs Alehins, Tanush Kumar
 
 **Introduction:**
 
+Understanding the changes in a population in response to a variety of factors, such as disease outbreaks, natural disasters, and socioeconomic collapse, is critical in guiding public health actions related to emergency response, policy decisions, and recovery efforts. A valuable metric to assess the extent of change is a population in the aftermath of an impactful event is mortality, as it is a measurable outcome that is directly representative of a negative change in the population of interest. Incidents that affect a population and that require public health responses can affect mortality both directly and indirectly, and the changes in the population in response to the incident, in terms of mortality, is highly specific to the nature of incident itself. Despite, and perhaps on account of the complexity posed by this characteristic of the measure of mortality, it is essential to develop methods to estimate mortality. Building on these estimations, excess mortality, the difference between the observed and expected number of deaths of a population, can be used as an indicator of the impact of public health crises and can guide policy and action as a response.
+
+Estimating excess mortality is complicated by the presence of several influencing factors, such as changes in the population structure by demographic factors, seasonal fluctuations associated with disease, and other underlying trends in mortality. In addition, the effects of a disaster or epidemic may vary by different groupings of the population of interest, making it necessary to adjust for variables such as age and sex. Though useful, methods of estimating excess mortality relying solely on trends in historical data fail to account for these sources of variability, in addition to inherently being unable to adapt estimations to distinct public health crises. 
+
+This project attempts to address some of the limitations of traditional modeling methods  
+
+
 **Methods:**
+
+The source of the data for the majority of the analysis outlined in this report is the `excessmort` package, which has been utilized in and made available through a [study](https://pmc.ncbi.nlm.nih.gov/articles/PMC10200579/) using statistical methods to estimate excess mortality. The [`excessmort`](https://cran.r-project.org/web/packages/excessmort/) package was published in November of 2024, and contains the variable `puerto_rico_counts`, which is the data frame of interest for this study. The data frame contains 499644 rows and 5 columns, which are `agegroup`, `date`, `sex`, `population`, and `outcome`, and the data ranges from January 1 of 1985, to December 31 of 2022. The `outcome` column represents the number of deaths for members of the corresponding age group and sex, in Puerto Rico, on the specified date, while the `population` column represents the number of individuals of the specified age group and sex, in Puerto Rico, on the specified date. The ...
+
+... 
+
+Code for the data cleaning and analysis methods outlined here can be found in the file `code.R` in the code directory.
+
+Additionally, the data for the counts of deaths in Puerto Rico contained in the `excessmort` package was compared with data in the Demographic Registry - Quality and Vital Statistics Division as presented by the [New York Times](https://github.com/c2-d2/pr_mort_official/raw/master/data/Mortalidad-RegDem-2015-17-NYT-part1.pdf). This data was obtained and wrangled using the `pdftools` packages in R, and the specific code used to do so is contained in the file `pdf_extract.qmd` in the `code` directory. The extracted and cleaned data used can be found in the `excess_mort.csv` in the `data` directory. Specifically, the New York Times data regarding the number of deaths in Puerto Rico by year and month have been aggregated, from January of 2015 to November of 2017, and the data does not display any missingness.
 
 **Results:**
 
+Upon comparison of the data from the `excessmort` package and the New York Times Report of the [Demographic Registry - Quality and Vital Statistics Division](https://github.com/c2-d2/pr_mort_official/raw/master/data/Mortalidad-RegDem-2015-17-NYT-part1.pdf) for the total number of deaths in Puerto Rico from 2015 to 2017, aggregated by year and month, it was found that the New York Times understated the number deaths overall. The total difference between the deaths reported by `excessmort` and the New York Times was 1328, with the largest difference being in November of 2017 at 1018, and the discrepancies in the reported number of deaths from the two data sources is visualized in the table below:
+
+![](./../data/count_comparison.png)
+
 **Discussion:**
+
+Furthermore, as described in the results section, the largest discrepancy in the count of deaths between the `excessmort` package and the New York Times report is in November of 2017, with 1018 deaths being underreported. As the New York Times Report does not include deaths for December of 2017, this report was likely compiled in or around December of 2017. Additionally, the discrepancies between the two data sources (`excessmort` - NYT) is positive and starts increasing from September to November of 2017. This increase in the discrepancy can be attributed to Hurricane Maria as well as the time at which the NYT report was likely compiled, as the updating of the death toll would have been slow and inaccurate in the wake of such a catastrophic natural disaster.
