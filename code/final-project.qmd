@@ -8,7 +8,7 @@ BST 260 Final Project
 
 Harshi Saha, Jurijs Alehins, Tanush Kumar
 
-### Examining Mortality Trends in Puerto Rico: Demographic Patterns and the Impact of Hurricane María
+### Examining Mortality Trends in Puerto Rico: Demographic Patterns and the Impact of Hurricane Maria
 
 **Abstract:**
 
@@ -18,8 +18,7 @@ Understanding the changes in a population in response to a variety of factors, s
 
 Estimating excess mortality is complicated by the presence of several influencing factors, such as changes in the population structure by demographic factors, seasonal fluctuations associated with disease, and other underlying trends in mortality. In addition, the effects of a disaster or epidemic may vary by different groupings of the population of interest, making it necessary to adjust for variables such as age and sex. Though useful, methods of estimating excess mortality relying solely on trends in historical data fail to account for these sources of variability, in addition to inherently being unable to adapt estimations to distinct public health crises. 
 
-This project attempts to address some of the limitations of traditional modeling methods  
-
+This project attempts to address some of the limitations of traditional modeling methods using Poisson models to flexibly account for variability and the factors affecting mortality as mentioned above. The data set of interest is `puerto_rico_counts` derived from the `excess_mort` package published as part of a related [study](https://pmc.ncbi.nlm.nih.gov/articles/PMC10200579/), representing the records of mortality in Puerto Rico. This report will use excess mortality to evaluate the ability of the model to estimate the impact of Hurricane Maria on the population, and will also investigate demographic trends, specifically by age and sex, in the Puerto Rican population that may be relevant to the modeling attempts undertaken here.
 
 **Methods:**
 
