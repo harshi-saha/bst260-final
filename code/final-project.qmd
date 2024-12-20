@@ -1,0 +1,21 @@
+---
+title: "bst260-final"
+format: html
+eval: true
+---
+
+BST 260 Final Project
+
+Harshi Saha, Jurijs Alehins, Tanush Kumar
+
+### Examining Mortality Trends in Puerto Rico: Demographic Patterns and the Impact of Hurricane María
+
+**Abstract:**
+
+**Introduction:**
+
+**Methods:**
+
+**Results:**
+
+**Discussion:**
