@@ -10,8 +10,10 @@ library(sandwich)
 str(puerto_rico_counts)
 dim(puerto_rico_counts)
 
-#setwd("~/bst260-final/code")
-excess_mort_pdf <- read.csv("../data/excess_mort.csv") # 2015, 2016, 2017
+# Q5
+
+setwd("~/Desktop/Harvard/Courses/BST260/Project/bst260-final")
+excess_mort_pdf <- read.csv("./data/excess_mort.csv") # 2015, 2016, 2017
 
 month_lookup <- c("JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6,
                   "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT*" = 10, "NOV" = 11, "DEC" = 12)
@@ -49,7 +51,7 @@ str(excess_mort_15_17)
 colnames(excess_mort_pdf) 
 View(excess_mort_15_17)
 
-############################
+# Q1
 
 weekly_counts <- puerto_rico_counts |> 
   mutate(date = as.Date(date)) |> 
@@ -200,3 +202,4 @@ weekly_counts_17 |>
          se = prediction_nb$se.fit, 
          sigma = sd(fit_nb$resid)) |>
   mutate(se = (outcome_hat - outcome))
+

@@ -17,51 +17,104 @@ counts <- puerto_rico_counts |>
   mutate(date = ymd(date))
 ```
 
-```{r}
-p <- counts |> 
+```{r, fig.width = 16, fig.height = 10}
+counts |> 
   mutate(year = year(date)) |>
   group_by(year,sex,agegroup) |>
-  summarize(population = mean(population)) |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) + facet_wrap(~sex) 
-ggsave("population1.png", plot = p, width = 8, height = 6, dpi = 300)
+  summarize(population = mean(population), .groups="drop") |>
+  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
+  labs(title = "Population Trends by Age Group and Sex",
+       x = "Year",
+       y = "Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 28),
+        axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x = element_text(size = 22), 
+        axis.title.y = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        legend.position = "right", legend.box = "vertical",
+        legend.text = element_text(size = 24),
+        legend.title = element_text(size = 24))
 ```
 
-```{r}
-
+```{r, fig.width = 16, fig.height = 10}
 counts |> 
   mutate(year = year(date)) |>
   filter(agegroup %in% c('20-24','25-29','30-34','35-39','40-44')) |>
   group_by(year,sex,agegroup) |>
-  summarize(population = mean(population)) |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) + facet_wrap(~sex)
+  summarize(population = mean(population), .groups = "drop") |>
+  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
+  labs(title = "Population Trends by Age Group and Sex",
+       x = "Year",
+       y = "Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 28),
+        axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x = element_text(size = 22), 
+        axis.title.y = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        legend.position = "right", legend.box = "vertical",
+        legend.text = element_text(size = 24),
+        legend.title = element_text(size = 24))
 ```
 
-```{r}
+```{r, fig.width = 16, fig.height = 10}
 counts |> 
   mutate(year = year(date)) |>
   filter(agegroup %in% c('45-49','50-54','55-59','60-64')) |>
   group_by(year,sex,agegroup) |>
-  summarize(population = mean(population)) |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) + facet_wrap(~sex)
+  summarize(population = mean(population), .groups = "drop") |>
+  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
+  labs(title = "Population Trends by Age Group and Sex",
+       x = "Year",
+       y = "Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 28),
+        axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x = element_text(size = 22), 
+        axis.title.y = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        legend.position = "right", legend.box = "vertical",
+        legend.text = element_text(size = 24),
+        legend.title = element_text(size = 24))
 ```
 
-```{r}
+```{r, fig.width = 16, fig.height = 10}
 counts |> 
   mutate(year = year(date)) |>
   filter(agegroup %in% c('65-69','70-74','75-79','80-84','85-Inf')) |>
   group_by(year,sex,agegroup) |>
-  summarize(population = mean(population)) |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) + facet_wrap(~sex)
+  summarize(population = mean(population), .groups = "drop") |>
+  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
+  labs(title = "Population Trends by Age Group and Sex",
+       x = "Year",
+       y = "Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 28),
+        axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x = element_text(size = 22), 
+        axis.title.y = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        legend.position = "right", legend.box = "vertical",
+        legend.text = element_text(size = 24),
+        legend.title = element_text(size = 24))
 ```
 
-
-```{r}
-p <- counts |>
+```{r, fig.width = 16, fig.height = 10}
+counts |>
   mutate(year=year(date)) |>
   mutate(age_group_category = case_when(
       agegroup %in% c("0-4", "5-9", "10-14","15-19") ~ "Child",
-      agegroup %in% c("20-24", "25-29","30-34","35-39","40-44") ~ "Young Adult",
-      agegroup %in% c("45-49","50-54","55-59","60-64") ~ "Adult",
+      agegroup %in% c("20-24", "25-29","30-34","35-39","40-44") ~ "Adult",
+      agegroup %in% c("45-49","50-54","55-59","60-64") ~ "Older Adult",
       TRUE ~ "Senior Citizens")) |>
   group_by(year, age_group_category, sex) |>
   summarize(total_population = sum(population, na.rm = TRUE), .groups = "drop") |>
@@ -69,11 +122,19 @@ p <- counts |>
   mutate(
     year_total_population = sum(total_population),
     percentage = (total_population / year_total_population) * 100) |>
-    ggplot() + geom_line(aes(x = year, y = percentage, color = age_group_category)) + facet_wrap(~sex)
-ggsave("population2.png", plot = p, width = 8, height = 6, dpi = 300)
+    ggplot() + geom_line(aes(x = year, y = percentage, color = age_group_category)) + 
+  labs(title = "Population Trends by Age Group and Sex",
+       x = "Year",
+       y = "Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 28),
+        axis.text.x = element_text(size = 24), 
+        axis.text.y = element_text(size = 24),
+        axis.title.x = element_text(size = 22), 
+        axis.title.y = element_text(size = 22),
+        strip.text = element_text(size = 22),
+        legend.position = "right", legend.box = "vertical",
+        legend.text = element_text(size = 24),
+        legend.title = element_text(size = 24))
 ```
-
-
-
-
-
