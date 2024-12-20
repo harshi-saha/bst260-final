@@ -51,8 +51,42 @@ str(excess_mort_15_17)
 colnames(excess_mort_pdf) 
 View(excess_mort_15_17)
 
-# Q1
+# Q2
 
+# data processing
+
+weekly_counts <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |> # defined as Wed due to the date when Maria hit
+  filter(year(date) < 2017) |> # filter for data before 2017
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(rate = outcome/population * 10^5,
+         week = epiweek(date)) |>
+  group_by(week, sex, agegroup) |> 
+  summarize(mean_outcome = mean(outcome, na.rm = TRUE),
+            sd_outcome = sd(outcome, na.rm = TRUE),
+            mean_rate = mean(rate, na.rm = TRUE),
+            sd_rate = sd(rate, na.rm = TRUE),
+            .groups = "drop")
+
+ggplot(weekly_counts, aes(x = week, y = mean_rate, color = sex)) +
+  geom_line(size = 1) +
+  facet_wrap(~agegroup, scales = "free_y", ncol = 3) + # facet by age group with 3 columns
+  labs(title = "Average Death Rate Per 100,000 People by Age Group and Sex",
+       x = "Week",
+       y = "Average Death Rate Per 100,000 People") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 18),
+        strip.text = element_text(size = 14),
+        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
+        axis.text.y = element_text(size = 10),
+        legend.position = "top")
+
+# data processing
 weekly_counts <- puerto_rico_counts |> 
   mutate(date = as.Date(date)) |> 
   mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
@@ -81,7 +115,7 @@ weekly_counts_17 <- weekly_counts |> filter(date > as.Date("2016-12-31") & date 
 mean(weekly_counts_16$outcome)
 var(weekly_counts_16$outcome)
 
-############ Fit Model
+# model fitting
 fit1 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + day + week, 
                                 offset = log(population), 
                                 data = _, family = poisson())
@@ -121,13 +155,14 @@ fit6 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day
 summary(fit6)
 anova(fit6,fit4, test = "Chisq")
 
+# final model
 fit7 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day 
                                 + age_group_category*sex + day*age_group_category, 
                                 offset = log(population), 
                                 data = _, family = poisson())
 summary(fit7)
 anova(fit7,fit4, test = "Chisq")
-# Check dispersion parameter
+# check dispersion parameter
 phi <- sum(residuals(fit7, type = "pearson")^2) / fit$df.residual
 cat("Dispersion parameter (phi):", phi, "\n")
 
@@ -141,8 +176,7 @@ x <- as.data.frame(x$coefficients)
 x$exp <- exp(x[,'Estimate'])
 x[order(x$exp),]
 
-###############
-
+# prediction
 prediction <- predict(fit7, newdata = weekly_counts_17, se.fit=TRUE, type = 'response')
 prediction$fit
 
