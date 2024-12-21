@@ -12,7 +12,7 @@ dim(puerto_rico_counts)
 
 # Q5
 
-setwd("~/Desktop/Harvard/Courses/BST260/Project/bst260-final")
+#setwd("~/Desktop/Harvard/Courses/BST260/Project/bst260-final")
 excess_mort_pdf <- read.csv("./data/excess_mort.csv") # 2015, 2016, 2017
 
 month_lookup <- c("JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, "JUN" = 6,
@@ -64,31 +64,95 @@ weekly_counts <- puerto_rico_counts |>
             population = mean(population, na.rm = TRUE), 
             n = n(), .groups = "drop") |>
   filter(n==7) |>
-  mutate(rate = outcome/population * 10^5,
-         week = epiweek(date)) |>
-  group_by(week, sex, agegroup) |> 
-  summarize(mean_outcome = mean(outcome, na.rm = TRUE),
-            sd_outcome = sd(outcome, na.rm = TRUE),
-            mean_rate = mean(rate, na.rm = TRUE),
-            sd_rate = sd(rate, na.rm = TRUE),
-            .groups = "drop")
+  mutate(sex = as.factor(sex), agegroup = as.factor(agegroup), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population)
+  
+weekly_counts_16 <- weekly_counts |> filter(date < as.Date("2017-01-01"))
+# model fitting
+fit1 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + day + week, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit1)
+vif(fit1)
 
-ggplot(weekly_counts, aes(x = week, y = mean_rate, color = sex)) +
-  geom_line(size = 1) +
-  facet_wrap(~agegroup, scales = "free_y", ncol = 3) + # facet by age group with 3 columns
-  labs(title = "Average Death Rate Per 100,000 People by Age Group and Sex",
-       x = "Week",
-       y = "Average Death Rate Per 100,000 People") +
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 18),
-        strip.text = element_text(size = 14),
-        axis.text.x = element_text(size = 10, angle = 45, hjust = 1),
-        axis.text.y = element_text(size = 10),
-        legend.position = "top")
+fit2 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + day, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit2)
+anova(fit2,fit1, test = "Chisq")
 
-# data processing
+fit3 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + week, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit3)
+anova(fit3,fit1, test = "Chisq")
+
+fit4 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + week + day 
+                                + agegroup*sex, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit4)
+anova(fit4,fit1, test = "Chisq")
+
+fit5 <- weekly_counts_16 |> glm(outcome ~ agegroup+ sex + week + day 
+                                + agegroup*sex + sex*week, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit5)
+anova(fit5,fit1, test = "Chisq")
+
+
+
+# final model
+fit7 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + week + day  + agegroup*sex + day*agegroup, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+summary(fit7)
+anova(fit7,fit4, test = "Chisq")
+# check dispersion parameter
+phi <- sum(residuals(fit7, type = "pearson")^2) / fit7$df.residual
+cat("Dispersion parameter (phi):", phi, "\n")
+
+fit_nb <- glm.nb(outcome ~ agegroup + sex + week + day 
+                 + agegroup*sex + day*agegroup,+ offset(log(population)), 
+                 data = weekly_counts_16)
+summary(fit_nb)
+
+x <- summary(fit7)
+x <- as.data.frame(x$coefficients)
+x$exp <- exp(x[,'Estimate'])
+x[order(x$exp),]
+
+prediction
+prediction <- predict(fit7, newdata = weekly_counts_16, se.fit=TRUE, type = 'response')
+prediction$fit
+
+new_counts <- weekly_counts_16 |> mutate(outcome_hat = prediction$fit,
+                           se = prediction$se.fit, 
+                           sigma = sd(fit7$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  group_by(date) 
+
+new_counts |>
+  group_by(agegroup,sex) |>
+  ggplot() + geom_line(aes(x = date, y = outcome_hat, color = sex)) + facet_wrap(~agegroup, scales = "free_y") +
+  ggtitle("Expected mortality by age group and sex from 1986 - 2016")
+
+new_counts |>
+  group_by(agegroup,sex) |>
+  ggplot(aes(x = date, y = 1000*outcome/population, color = sex)) + geom_smooth(method = 'loess') + facet_wrap(~agegroup, scales = "free_y") +
+  ggtitle("Death rates (LOESS) by age group and sex from 1986 - 2016") + labs(y = 'Rate')
+
+
+######### Q3:
+
 weekly_counts <- puerto_rico_counts |> 
   mutate(date = as.Date(date)) |> 
+  filter(year(date)<2018) |>
   mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
   group_by(date, sex, agegroup) |> 
   summarize(outcome = sum(outcome, na.rm = TRUE), 
@@ -97,8 +161,8 @@ weekly_counts <- puerto_rico_counts |>
   filter(n==7) |>
   mutate(age_group_category = case_when(
     agegroup %in% c("5-9", "10-14") ~ "5-14",
-    agegroup %in% c("15-19","20-24", "25-29") ~ "15-29",
-    agegroup %in% c("30-34","35-39","40-44","45-49") ~ "30-49",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
     TRUE ~ agegroup)) |>
   group_by(date,sex,age_group_category) |>
   summarize(outcome = sum(outcome, na.rm = TRUE), population = sum(population, na.rm = TRUE), .groups = 'drop') |>
@@ -109,81 +173,90 @@ weekly_counts <- puerto_rico_counts |>
          day = difftime(date, min(date), units = "day"),
          rate = 1000*outcome/population)
 
-weekly_counts_16 <- weekly_counts |> filter(date < as.Date("2017-01-01"))
-weekly_counts_17 <- weekly_counts |> filter(date > as.Date("2016-12-31") & date < as.Date("2018-01-01"))
-
-mean(weekly_counts_16$outcome)
-var(weekly_counts_16$outcome)
-
-# model fitting
-fit1 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + day + week, 
+new_model <- weekly_counts |> glm(outcome ~ age_group_category + sex + week + day  + age_group_category*sex 
+                                  + day*age_group_category, 
                                 offset = log(population), 
                                 data = _, family = poisson())
-summary(fit1)
-vif(fit1)
+summary(new_model)
 
-fit2 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + day, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit2)
-anova(fit2,fit1, test = "Chisq")
-
-fit3 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit3)
-anova(fit3,fit1, test = "Chisq")
-
-fit4 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day 
-                                + age_group_category*sex, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit4)
-anova(fit4,fit1, test = "Chisq")
-
-fit5 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day 
-                                + age_group_category*sex + sex*week, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit5)
-anova(fit5,fit1, test = "Chisq")
-
-fit6 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day 
-                                + age_group_category*sex + age_group_category*week, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit6)
-anova(fit6,fit4, test = "Chisq")
-
-# final model
-fit7 <- weekly_counts_16 |> glm(outcome ~ age_group_category + sex + week + day 
-                                + age_group_category*sex + day*age_group_category, 
-                                offset = log(population), 
-                                data = _, family = poisson())
-summary(fit7)
-anova(fit7,fit4, test = "Chisq")
-# check dispersion parameter
-phi <- sum(residuals(fit7, type = "pearson")^2) / fit$df.residual
-cat("Dispersion parameter (phi):", phi, "\n")
-
-fit_nb <- glm.nb(outcome ~ age_group_category + sex + week + day 
-                 + age_group_category*sex + day*age_group_category,+ offset(log(population)), 
-                 data = weekly_counts_16)
-summary(fit_nb)
-
-x <- summary(fit7)
-x <- as.data.frame(x$coefficients)
-x$exp <- exp(x[,'Estimate'])
-x[order(x$exp),]
-
-# prediction
-prediction <- predict(fit7, newdata = weekly_counts_17, se.fit=TRUE, type = 'response')
+prediction <- predict(new_model, se.fit=TRUE, type = 'response')
 prediction$fit
 
-weekly_counts_17 |> mutate(outcome_hat = prediction$fit,
+counts_q3 <- weekly_counts |> mutate(outcome_hat = prediction$fit,
+                                         se = prediction$se.fit, 
+                                         sigma = sd(new_model$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  group_by(date)|>
+  summarize(excess = sum(excess), outcome = sum(outcome), outcome_hat = sum(outcome_hat), se = sqrt(sum(sigma^2 + se^2)))  |>
+  filter(outcome > outcome_hat + 3*se) |>
+  filter(excess > 100)
+  
+dates_to_remove <- c("1998-09-23","1998-09-30","1998-10-07","1998-10-14","1998-10-21","1998-10-28","2017-09-20", "2017-09-27", "2017-10-04")
+
+
+## Q4: 
+weekly_counts <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("5-9", "10-14") ~ "5-14",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
+    TRUE ~ agegroup)) |>
+  group_by(date,sex,age_group_category) |>
+  summarize(outcome = sum(outcome, na.rm = TRUE), population = sum(population, na.rm = TRUE), .groups = 'drop') |>
+  mutate(sex = as.factor(sex), age_group_category = as.factor(age_group_category), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population) |>
+  filter(!(date %in% dates_to_remove))
+
+final_model <- weekly_counts |> glm(outcome ~ age_group_category + sex + week + day  + age_group_category*sex 
+                                  + day*age_group_category, 
+                                  offset = log(population), 
+                                  data = _, family = poisson())
+summary(final_model)
+
+##Predict on 17-18
+
+weekly_counts_17_18 <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("5-9", "10-14") ~ "5-14",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
+    TRUE ~ agegroup)) |>
+  group_by(date,sex,age_group_category) |>
+  summarize(outcome = sum(outcome, na.rm = TRUE), population = sum(population, na.rm = TRUE), .groups = 'drop') |>
+  mutate(sex = as.factor(sex), age_group_category = as.factor(age_group_category), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population) |>
+  filter(year(date)==2017 | year(date)==2018)
+
+prediction <- predict(final_model, newdata = weekly_counts_17_18, se.fit=TRUE, type = 'response')
+prediction$fit
+counts_q4 <- weekly_counts_17_18 |>
+  mutate(outcome_hat = prediction$fit)
+
+weekly_counts_17_18 |> mutate(outcome_hat = prediction$fit,
                            se = prediction$se.fit, 
-                           sigma = sd(fit$resid)) |>
-  filter(date > as.Date("2016-12-31")) |> 
+                           sigma = sd(final_model$resid)) |>
   mutate(excess = outcome-outcome_hat) |>
   group_by(date) |> 
   summarize(excess = sum(excess), se = sqrt(sum(sigma^2 + se^2)), 
@@ -192,48 +265,36 @@ weekly_counts_17 |> mutate(outcome_hat = prediction$fit,
          upper_ci = excess + 1.96 * se) |>
   ggplot(aes(x = date, y = excess)) +
   geom_line() +
-  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci, color = 'red')) +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci, color = '95% CI')) +
+  scale_color_manual(values = c("95% CI" = "red")) +
   labs(title = "Excess Mortality Estimate with Confidence Intervals",
        x = "Week",
-       y = "Excess Mortality Estimate"
+       y = "Excess Mortality Estimate",
   ) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 12))
 
-
-weekly_counts_17 |> mutate(outcome_hat = prediction_nb$fit,
-                           se = prediction_nb$se.fit, 
-                           sigma = sd(fit_nb$resid)) |>
-  filter(date > as.Date("2016-12-31")) |> 
+weekly_counts_17_18 |> mutate(outcome_hat = prediction$fit,
+                              se = prediction$se.fit, 
+                              sigma = sd(final_model$resid)) |>
   mutate(excess = outcome-outcome_hat) |>
-  group_by(date) |> 
-  summarize(excess = sum(excess), se = sqrt(sum(sigma^2 + se^2)), 
-            .groups = "drop") |>
+  mutate(age_group_category = factor(age_group_category, 
+                                     levels = c("0-4", "5-14", "15-19", "20-29", "30-44", 
+                                     "45-49", "50-54", "55-59", "60-64", "65-69", 
+                                     "70-74", "75-79", "80-84", "85-Inf"))) |>
+  group_by(date, sex,age_group_category) |> 
   mutate(lower_ci = excess - 1.96 * se,
          upper_ci = excess + 1.96 * se) |>
-  ggplot(aes(x = date, y = excess)) +
+  ggplot(aes(x = date, y = excess, group = sex, color = sex)) +
   geom_line() +
-  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci, color = 'red')) +
+  geom_vline(xintercept = as.Date("2017-09-20"), linetype = "dashed", color = "navyblue", size = 0.5) +
+  facet_wrap(~age_group_category, scale= 'free_y', ncol = 3) +
   labs(title = "Excess Mortality Estimate with Confidence Intervals",
        x = "Week",
-       y = "Excess Mortality Estimate"
+       y = "Excess Mortality Estimate",
   ) +
   theme_minimal() +
   theme(plot.title = element_text(hjust = 0.5, size = 12))
 
-weekly_counts_17 |> mutate(outcome_hat = prediction_nb$fit,
-                           se = prediction_nb$se.fit, 
-                           sigma = sd(fit_nb$resid)) |>
-  filter(date > as.Date("2016-12-31") & date < as.Date("2018-01-01")) |> 
-  group_by(date) |>
-  summarize(deaths_pred = sum(outcome_hat), deaths_actual = sum(outcome), se = sqrt(sum(sigma^2 + se^2)), 
-            .groups = "drop") |>
-  pivot_longer(cols = c('deaths_actual', 'deaths_pred')) |>
-  ggplot() + geom_line(aes(x = date, y = value, color = name))
 
-weekly_counts_17 |>
-  mutate(outcome_hat = prediction_nb$fit,
-         se = prediction_nb$se.fit, 
-         sigma = sd(fit_nb$resid)) |>
-  mutate(se = (outcome_hat - outcome))
-
+#################
