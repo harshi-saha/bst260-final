@@ -2,6 +2,7 @@ library(dplyr)
 library(lubridate)
 library(tidyverse)
 library(ggplot2)
+library(devtools)
 install_github("rafalab/excessmort")
 library(excessmort)
 library(ggplot2)
@@ -13,7 +14,6 @@ library(devtools)
 
 # Q1
 counts <- puerto_rico_counts |> mutate(date = ymd(date))
-
 counts |> 
   mutate(year = year(date)) |>
   group_by(year,sex,agegroup) |>
@@ -33,70 +33,6 @@ counts |>
         legend.position = "right", legend.box = "vertical",
         legend.text = element_text(size = 24),
         legend.title = element_text(size = 24))
-
-counts |> 
-  mutate(year = year(date)) |>
-  filter(agegroup %in% c('20-24','25-29','30-34','35-39','40-44')) |>
-  group_by(year,sex,agegroup) |>
-  summarize(population = mean(population), .groups = "drop") |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
-  labs(title = "Population Trends by Age Group (20-44) and Sex",
-       x = "Year",
-       y = "Population") +
-  facet_wrap(~sex) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 28),
-        axis.text.x = element_text(size = 24), 
-        axis.text.y = element_text(size = 24),
-        axis.title.x = element_text(size = 22), 
-        axis.title.y = element_text(size = 22),
-        strip.text = element_text(size = 22),
-        legend.position = "right", legend.box = "vertical",
-        legend.text = element_text(size = 24),
-        legend.title = element_text(size = 24))
-
-counts |> 
-  mutate(year = year(date)) |>
-  filter(agegroup %in% c('45-49','50-54','55-59','60-64')) |>
-  group_by(year,sex,agegroup) |>
-  summarize(population = mean(population), .groups = "drop") |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
-  labs(title = "Population Trends by Age Group (45-64) and Sex",
-       x = "Year",
-       y = "Population") +
-  facet_wrap(~sex) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 28),
-        axis.text.x = element_text(size = 24), 
-        axis.text.y = element_text(size = 24),
-        axis.title.x = element_text(size = 22), 
-        axis.title.y = element_text(size = 22),
-        strip.text = element_text(size = 22),
-        legend.position = "right", legend.box = "vertical",
-        legend.text = element_text(size = 24),
-        legend.title = element_text(size = 24))
-
-counts |> 
-  mutate(year = year(date)) |>
-  filter(agegroup %in% c('65-69','70-74','75-79','80-84','85-Inf')) |>
-  group_by(year,sex,agegroup) |>
-  summarize(population = mean(population), .groups = "drop") |>
-  ggplot() + geom_line(aes(x = year, y = population, color = agegroup)) +
-  labs(title = "Population Trends by Age Group (>65) and Sex",
-       x = "Year",
-       y = "Population") +
-  facet_wrap(~sex) + 
-  theme_minimal() +
-  theme(plot.title = element_text(hjust = 0.5, size = 28),
-        axis.text.x = element_text(size = 24), 
-        axis.text.y = element_text(size = 24),
-        axis.title.x = element_text(size = 22), 
-        axis.title.y = element_text(size = 22),
-        strip.text = element_text(size = 22),
-        legend.position = "right", legend.box = "vertical",
-        legend.text = element_text(size = 24),
-        legend.title = element_text(size = 24))
-
 counts |>
   mutate(year=year(date)) |>
   mutate(age_group_category = case_when(
@@ -207,7 +143,7 @@ prediction$fit
 
 new_counts <- weekly_counts_16 |> mutate(outcome_hat = prediction$fit,
                                          se = prediction$se.fit, 
-                                         sigma = sd(fit7$resid)) |>
+                                         sigma = sd(fit5$resid)) |>
   mutate(excess = outcome-outcome_hat) |>
   group_by(date) 
 

@@ -1,1 +1,3 @@
-# bst260-final
+- To reproduce the analysis for the project, simply run the code.R file in the code directory(this is for EDA, Q1-4, figures)
+- To reproduce the wrangling code that extracts the data from the pdf (Q5), run the code wrangle.R file in the code directory
+- Rendered html version of the final report qmd file is contained in the docs directory

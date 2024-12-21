@@ -1,0 +1,362 @@
+---
+title: "bst260-final"
+format: html
+eval: true
+---
+
+BST 260 Final Project
+
+Harshi Saha, Jurijs Alehins, Tanush Kumar
+
+### Examining Mortality Trends in Puerto Rico: Demographic Patterns and the Impact of Hurricane Maria
+
+**Abstract:**
+
+Natural disasters such as floods, hurricanes, and earthquakes can bring about drastic changes in the population of a region. Quantifying these effects across time is of utmost importance from a public health and policy perspective. The major effects of such events can be captured using mortality data. Statistical methods such as regression models have become robust methods for modeling excess mortality due to these calamities.  However, such models must overcome several issues, such as natural variation, seasonality, and demographic changes. In this project, we present a Poisson regression model that overcomes these challenges to forecast excess mortality in Puerto Rico. Our model accounts for seasonality, demographic factors such as age and sex, and effect modification between these terms.  We demonstrate the effectiveness of our model by using it to quantify the effect of Hurricane Maria on the population of Puerto Rico. Our findings indicate that Hurricane Maria appears to have affected older populations, especially those above 55, more than other age groups. We also find disproportionate and time-varying trends by biological sex.
+
+**Introduction:**
+
+Understanding the changes in a population in response to a variety of factors, such as disease outbreaks, natural disasters, and socioeconomic collapse, is critical in guiding public health actions related to emergency response, policy decisions, and recovery efforts. A valuable metric to assess the extent of change is a population in the aftermath of an impactful event is mortality, as it is a measurable outcome that is directly representative of a negative change in the population of interest. Incidents that affect a population and that require public health responses can affect mortality both directly and indirectly, and the changes in the population in response to the incident, in terms of mortality, is highly specific to the nature of incident itself. Despite, and perhaps on account of the complexity posed by this characteristic of the measure of mortality, it is essential to develop methods to estimate mortality. Building on these estimations, excess mortality, the difference between the observed and expected number of deaths of a population, can be used as an indicator of the impact of public health crises and can guide policy and action as a response.
+
+Estimating excess mortality is complicated by the presence of several influencing factors, such as changes in the population structure by demographic factors, seasonal fluctuations associated with disease, and other underlying trends in mortality. Moreover, major calamities can massively effect excess mortality, and the trend can be dependent on the type of event. For example, after a natural disaster such as a hurricane we generally see a spike in excess mortality. On the other hand, during epidemics we see a gradual rise in excess mortality, and then a gradual decline. In addition, the effects of such an event may vary by different groupings of the population of interest, making it necessary to adjust for variables such as age and sex. Though useful, methods of estimating excess mortality relying solely on trends in historical data fail to account for these sources of variability, in addition to inherently being unable to adapt estimations to distinct public health crises. However, they serve as a valuable tool to quantify the effect of such events on excess mortality for different demographic groups.
+
+In this project, we attempt to model excess mortality in Puerto Rico in 2017 and 2018. We attempt to address some of the limitations of traditional modeling methods by using Poisson models to flexibly account for variability and the factors affecting mortality as mentioned above. We use the dataset `puerto_rico_counts` derived from the `excess_mort` package published as part of a related [study](https://pmc.ncbi.nlm.nih.gov/articles/PMC10200579/), representing the records of mortality in Puerto Rico from 1985 to 2022.
+
+Hurricane Maria was a powerful hurricane that devastated the northeast Carribean, including Puerto Rico, resulting in a death count of 2,975 people. We use our model to estimate excess mortality to estimate the impact of Hurricane Maria on the population. Through the model, we gain valuable insights on the impact of the hurricane on different demographic groups, specifically by age and sex.
+
+**Methods:**
+
+The source of the data for the majority of the analysis outlined in this report is the `excessmort` package, which has been utilized in and made available through a [study](https://pmc.ncbi.nlm.nih.gov/articles/PMC10200579/) using statistical methods to estimate excess mortality. The [`excessmort`](https://cran.r-project.org/web/packages/excessmort/) package was published in November of 2024, and contains the variable `puerto_rico_counts`, which is the data frame of interest for this study. The data frame contains 499,644 rows and 5 columns, which are `agegroup`, `date`, `sex`, `population`, and `outcome`, and the data ranges from January 1 of 1985, to December 31 of 2022. The `outcome` column represents the number of deaths for members of the corresponding age group and sex, in Puerto Rico, on the specified date, while the `population` column represents the number of individuals of the specified age group and sex, in Puerto Rico, on the specified date. The number of the `week` for each observation was redefined using the start day of Wednesday, as this is the day that Hurricane Maria made landfall, and this approach will prevent the immediate effect of the Hurricane in the first week of landfall from being split across two weeks in the data set. The data set contained daily count of deaths, and these were aggregate over for each week, by age and sex, in order to get the weekly mortalities such that the outcome was defined with one row for each combination of `week`, `age`, and `sex`. 
+
+The `puerto_rico_counts` data frame was examined for patterns of changes in population size by `age` and `sex`. First, a line graph was made using the raw counts of the total population, using the mean population for each week grouped by age and sex, from 1985 to 2022. Then, a line graph was made using the proportions of the total population, using the mean population for each week grouped by age groups, such that Child represented ages 0-19, Adult represented ages 20-44, Older Adult represented ages 45-64, and Senior Citizens represented ages 65 and above, and sex, from 1985 to 2022. The mortality rate was calculated by dividing the total grouped deaths by the average of the population grouped by age and sex for each week. 
+
+Based on the above, age groups with similar death rates were combined into larger groups, specifically, ages 5-14, 20-29, 30-44 were combined to create a new column `age_group_category` such that the values in the `age_group_category` column were 0-4, 5-14, 15-19, 20-29, 30-44, 45-49, 50-54, 55-59, 60-64, 70-74, 75-79, 80-84, and 85 and above.To account for the time dependent mortality trends across the years, a variables called `day` was created that described the number of days passed from the first day described in the data set, for each week. The features `day` and `age_group_category` were added to the `puerto_rico_counts` data set.
+
+Since the outcome for this study, encoded by the `outcome` variable in `puerto_rico_counts`, is the number of mortalities, which is a count, the model of choice is Poisson Regression. The offset was set to `log(population)` to account for the risk of death relative to the size of the population. The covariates investigated in the model building process, from the `puerto_rico_counts` data set, were `age_group_category`, `sex`, `week`, `day`. Models were initially fit for 1985 to 2016 with and without one of `day` and `week`, and AIC and Likelihood Ratio Tests indicated that both variables should be included in the model. Additionally, effect modification was assessed between `age_group_category` and `week`, `sex` and `week`, `age_group_category` and `sex`, and `age_group_category` and `day`, and AIC and Likelihood Ratio Tests indicated that only the `age_group_category`-`day`
+and the `age_group_category`-`sex` interaction terms were significant. The data indicated slight signs of overdispersion, so an alternate model was fit using Negative Binomial Regression, however AIC indicated that the model fit was much worse than the Poisson model. 
+
+Therefore, the final model chosen to estimate mortality was a Poisson regression model with an offset of `log(population)` with `outcome`, the number of deaths, estimated using `age_group_category`, `sex`, `week`, `day`, `age_group_category\*sex` and ` day\*age_group_category`. The expected mortality was calculated using this fitted model spanning 1985 to 2017 in the data set, and the standard deviation was calculated for each prediction. To identify periods from 1985 to 2017 having excess mortality to be investigated, weeks with actual mortality over 3 times the standard deviation of the estimated mortality were selected, and were then selected if the total excess mortality across age groups and sex for the identified weeks were greater than 100. These weeks were then cross-referenced with dates on which actual mortality increasing events of interest occurred in Puerto Rico. Selected observations that were identified as being associated with catastrophic events were dropped from the data set, after which the Poisson model chosen above was fitted again on the data set, form 1985 to 2017, with these outliers removed. This fitted model was then used to estimate mortality, and in turn calculate estimated excess mortality, for 2017 and 2018, and trends in mortality by age and sex, and especially around landfall of Hurricane Maria, were looked into.
+
+Additionally, the data for the counts of deaths in Puerto Rico contained in the `excessmort` package was compared with data in the Demographic Registry - Quality and Vital Statistics Division as presented by the [New York Times](https://github.com/c2-d2/pr_mort_official/raw/master/data/Mortalidad-RegDem-2015-17-NYT-part1.pdf). This data was obtained and wrangled using the `pdftools` packages in R, and the specific code used to do so is contained in the file `pdf_extract.qmd` in the `code` directory. The extracted and cleaned data used can be found in the `excess_mort.csv` in the `data` directory. Specifically, the New York Times data regarding the number of deaths in Puerto Rico by year and month have been aggregated, from January of 2015 to November of 2017, and the data does not display any missingness. 
+
+**Results:**
+
+In examining the population sizes of Puerto Rico by age group and sex, from 1985 to 2002, the population of individuals in the age groups 0-24 display a sharp decrease, while the population of individuals in the age groups 65 and above increased, for both sexes. For the individuals in the age groups with ages between 24 and 65 however, the population size appears to increase and then slightly decrease for both sexes. When grouping individuals by age, such that Child represented ages 0-19, Adult represented ages 20-44, Older Adult represented ages 45-64, and Senior Citizens represented ages 65 and above, as in Figure 1, it appears that the population of Children decreased drastically, and almost in a manner symmetrically opposite to the drastic increase in the proportion of Senior Citizens, and the proportion of Adults and Older Adults appear to decrease and increase respectfully towards a similar proportion, for both sexes. 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(dplyr)
+library(lubridate)
+library(tidyverse)
+library(ggplot2)
+library(devtools)
+install_github("rafalab/excessmort")
+library(excessmort)
+library(ggplot2)
+library(MASS)
+library(car)
+library(knitr)
+library(lmtest)
+library(devtools)
+
+# Q1
+counts <- puerto_rico_counts |> mutate(date = ymd(date))
+
+counts |>
+  mutate(year=year(date)) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("0-4", "5-9", "10-14","15-19") ~ "Child",
+    agegroup %in% c("20-24", "25-29","30-34","35-39","40-44") ~ "Adult",
+    agegroup %in% c("45-49","50-54","55-59","60-64") ~ "Older Adult",
+    TRUE ~ "Senior Citizens")) |>
+  group_by(year, age_group_category, sex) |>
+  summarize(total_population = sum(population, na.rm = TRUE), 
+            .groups = "drop") |>
+  group_by(year,sex) |>
+  mutate(
+    year_total_population = sum(total_population),
+    percentage = (total_population / year_total_population) * 100) |>
+  ggplot() + geom_line(aes(x = year, y = percentage, 
+                           color = age_group_category)) + 
+  labs(title = "Population Trends by Age Group Category and Sex",
+       x = "Year",
+       y = "Percentage of the Population") +
+  facet_wrap(~sex) + 
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 16))
+```
+
+Examining the weekly mortality rate by age and sex indicated similarities in death rate for the ages 5-14, 20-29, and 30-44, with the lowest death rates being from ages 5-14 and the highest death rates being from ages 70 and above, as indicated in Figure 2.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+# Q2
+# data processing
+weekly_counts <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |> # start defined as Wed due to the date when Maria hurricane hit
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(sex = as.factor(sex), agegroup = as.factor(agegroup), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population)
+
+# filtering to obtain data before 2017
+weekly_counts_16 <- weekly_counts |> filter(date < as.Date("2017-01-01"))
+
+fit5 <- weekly_counts_16 |> glm(outcome ~ agegroup + sex + week + day  + agegroup*sex + day*agegroup, 
+                                offset = log(population), 
+                                data = _, family = poisson())
+# prediction
+prediction <- predict(fit5, newdata = weekly_counts_16, se.fit = TRUE, 
+                      type = 'response')
+
+new_counts <- weekly_counts_16 |> mutate(outcome_hat = prediction$fit,
+                                         se = prediction$se.fit, 
+                                         sigma = sd(fit5$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  group_by(date) 
+
+new_counts |>
+  group_by(agegroup,sex) |>
+  ggplot(aes(x = date, y = 1000*outcome/population, color = sex)) + 
+  geom_smooth(method = 'loess') + facet_wrap(~agegroup, scales = "free_y") +
+  ggtitle("Death rates (LOESS) by age group and sex between 1986 and 2016") + 
+  labs(y = 'Rate')
+```
+
+In order to identify periods before and during 2017 with an excess mortality, several Poisson models were evaluated and fit, and the final chosen model was then used to calculate estimates and standard deviations of estimated mortality for each week. Weeks with actual mortality over 3 times the standard deviation of the estimated mortality and with total excess mortality across age groups and sex greater than 100, were identified as having excess mortalities to be investigated. The weeks extracted here were 29, 3 of which corresponded to Hurricane Maria, which attained landfall on September 20, 2017, and at least 4 of which aligned with Hurricane Georges, which attained landfall on September 21, 1998. After dropping observations corresponding to the weeks of and close to these dates, as they were determined to have excess mortality influencing the model, the model was refitted to compute expected death rates. Predictions for the estimated mortality were then made for 2017 to 2018 using this refitted model, and the resulting weekly estimations and the 95% confidence intervals for excess mortality were as in Figure 3. 
+
+```{r}
+#| echo: false
+# Q3
+weekly_counts <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  filter(year(date) < 2018) |>
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n == 7) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("5-9", "10-14") ~ "5-14",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
+    TRUE ~ agegroup)) |>
+  group_by(date,sex,age_group_category) |>
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = sum(population, na.rm = TRUE), 
+            .groups = 'drop') |>
+  mutate(sex = as.factor(sex), 
+         age_group_category = as.factor(age_group_category), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population)
+
+# fitting model with age group as a category, as well as expanding timeline to
+# include 2017
+new_model <- weekly_counts |> 
+  glm(outcome ~ age_group_category + sex + week + day  + age_group_category*sex 
+      + day*age_group_category, offset = log(population), data = _, 
+      family = poisson())
+
+prediction <- predict(new_model, se.fit = TRUE, type = 'response')
+
+# identifying periods with excess mortality
+counts_q3 <- weekly_counts |> mutate(outcome_hat = prediction$fit,
+                                     se = prediction$se.fit, 
+                                     sigma = sd(new_model$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  group_by(date) |>
+  summarize(excess = sum(excess), outcome = sum(outcome), 
+            outcome_hat = sum(outcome_hat), 
+            se = sqrt(sum(sigma^2 + se^2))) |>
+  filter(outcome > outcome_hat + 3*se) |>
+  filter(excess > 100)
+
+# remove dates based on the findings above
+dates_to_remove <- c("1998-09-23","1998-09-30","1998-10-07","1998-10-14",
+                     "1998-10-21","1998-10-28","2017-09-20", "2017-09-27", 
+                     "2017-10-04")
+
+# Q4 
+weekly_counts <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("5-9", "10-14") ~ "5-14",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
+    TRUE ~ agegroup)) |>
+  group_by(date,sex,age_group_category) |>
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = sum(population, na.rm = TRUE), 
+            .groups = 'drop') |>
+  mutate(sex = as.factor(sex), 
+         age_group_category = as.factor(age_group_category), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population) |>
+  filter(!(date %in% dates_to_remove))
+
+# final model
+final_model <- weekly_counts |> glm(outcome ~ age_group_category + sex + week
+                                    + day + age_group_category*sex 
+                                    + day*age_group_category, 
+                                    offset = log(population), 
+                                    data = _, family = poisson())
+
+# predicting for 2017 and 2018
+weekly_counts_17_18 <- puerto_rico_counts |> 
+  mutate(date = as.Date(date)) |> 
+  mutate(date = floor_date(date, unit = "week", week_start = 3)) |>
+  group_by(date, sex, agegroup) |> 
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = mean(population, na.rm = TRUE), 
+            n = n(), .groups = "drop") |>
+  filter(n==7) |>
+  mutate(age_group_category = case_when(
+    agegroup %in% c("5-9", "10-14") ~ "5-14",
+    agegroup %in% c("20-24", "25-29") ~ "20-29",
+    agegroup %in% c("30-34","35-39","40-44") ~ "30-44",
+    TRUE ~ agegroup)) |>
+  group_by(date,sex,age_group_category) |>
+  summarize(outcome = sum(outcome, na.rm = TRUE), 
+            population = sum(population, na.rm = TRUE), 
+            .groups = 'drop') |>
+  mutate(sex = as.factor(sex), age_group_category = as.factor(age_group_category), 
+         year = year(date),
+         month = as.factor(month(date)),
+         week = as.factor(week(date)),
+         day = difftime(date, min(date), units = "day"),
+         rate = 1000*outcome/population) |>
+  filter(year(date) == 2017 | year(date) == 2018)
+
+prediction <- predict(final_model, newdata = weekly_counts_17_18, 
+                      se.fit=TRUE, type = 'response')
+
+counts_q4 <- weekly_counts_17_18 |> mutate(outcome_hat = prediction$fit)
+
+# excess mortality with confidence intervals
+weekly_counts_17_18 |> mutate(outcome_hat = prediction$fit,
+                              se = prediction$se.fit, 
+                              sigma = sd(final_model$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  group_by(date) |> 
+  summarize(excess = sum(excess), se = sqrt(sum(sigma^2 + se^2)), 
+            .groups = "drop") |>
+  mutate(lower_ci = excess - 1.96 * se,
+         upper_ci = excess + 1.96 * se) |>
+  ggplot(aes(x = date, y = excess)) +
+  geom_line() +
+  geom_errorbar(aes(ymin = lower_ci, ymax = upper_ci, color = '95% CI')) +
+  scale_color_manual(values = c("95% CI" = "red")) +
+  labs(title = "Excess Mortality Estimate with Confidence Intervals",
+       x = "Week",
+       y = "Excess Mortality Estimate",
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 12))
+```
+
+The estimations were then separated by age and sex for this time interval, and were visualized as in Figure 4. 
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+weekly_counts_17_18 |> mutate(outcome_hat = prediction$fit,
+                              se = prediction$se.fit, 
+                              sigma = sd(final_model$resid)) |>
+  mutate(excess = outcome-outcome_hat) |>
+  mutate(age_group_category = factor(age_group_category, 
+                                     levels = c("0-4", "5-14", "15-19", "20-29", 
+                                                "30-44", "45-49", "50-54", 
+                                                "55-59", "60-64", "65-69", 
+                                                "70-74", "75-79", "80-84", 
+                                                "85-Inf"))) |>
+  group_by(date, sex,age_group_category) |> 
+  mutate(lower_ci = excess - 1.96 * se,
+         upper_ci = excess + 1.96 * se) |>
+  ggplot(aes(x = date, y = excess, group = sex, color = sex)) +
+  geom_line() +
+  geom_vline(xintercept = as.Date("2017-09-20"), linetype = "dashed", 
+             color = "navyblue", size = 0.5) +
+  facet_wrap(~age_group_category, scale = 'free_y', ncol = 3) +
+  labs(title = "Excess Mortality Estimate with Confidence Intervals",
+       x = "Week",
+       y = "Excess Mortality Estimate",
+  ) +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5, size = 12))
+
+```
+
+Figure 3 indicates a rise in excess mortality on and after landfall of Hurricane Maria. Figure 4 indicates peaks in excess mortality that align with landfall of Hurricane Maria for age groups 30-44 and age groups above 50. There is a slight delay in the peak for those above 80. The age groups 30-44 and 50-79 display higher excess mortality in males than females, while the age groups 70-74 and 80 and above display the opposite.
+
+
+Upon comparison of the data from the `excessmort` package and the New York Times Report of the [Demographic Registry - Quality and Vital Statistics Division](https://github.com/c2-d2/pr_mort_official/raw/master/data/Mortalidad-RegDem-2015-17-NYT-part1.pdf) for the total number of deaths in Puerto Rico from 2015 to 2017, aggregated by year and month, it was found that the New York Times understated the number deaths overall. The total difference between the deaths reported by `excessmort` and the New York Times was 1328, with the largest difference being in November of 2017 at 1018, and the discrepancies in the reported number of deaths from the two data sources is visualized in Table 1 below.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+excess_mort_pdf <- read.csv("./data/excess_mort.csv") # 2015, 2016, 2017
+
+month_lookup <- c("JAN" = 1, "FEB" = 2, "MAR" = 3, "APR" = 4, "MAY" = 5, 
+                  "JUN" = 6, "JUL" = 7, "AGO" = 8, "SEP" = 9, "OCT*" = 10, 
+                  "NOV" = 11, "DEC" = 12)
+
+# data extracted from the pdf
+excess_mort_pdf <- excess_mort_pdf |>
+  group_by(year, month) |>
+  summarise(count = sum(count, na.rm = TRUE), .groups = "drop") |>
+  mutate(month = as.numeric(month_lookup[month])) |>
+  arrange(year, month)
+
+# data from the package
+excess_mort_15_17 <- puerto_rico_counts |> mutate(date = as.Date(date)) |> 
+  filter(date > as.Date("2014-12-31") & date < as.Date("2017-12-01")) |> 
+  mutate(year = year(date), month = month(date)) |> 
+  group_by(year, month) |>
+  summarise(outcome = sum(outcome, na.rm = TRUE), .groups = "drop")
+
+comparison_table <- excess_mort_15_17
+colnames(comparison_table)[colnames(excess_mort_15_17) == "outcome"] <- "excessmort_count"
+comparison_table$NYT_count <- c(excess_mort_pdf$count)
+comparison_table$count_diff <- comparison_table$excessmort_count - comparison_table$NYT_count
+totals <- colSums(comparison_table)
+comparison_table <- rbind(comparison_table, totals)
+comparison_table[nrow(comparison_table), 1:2] <- NA
+kable(comparison_table)
+```
+
+**Discussion:**
+
+Based on the comparison of the population sizes of Puerto Rico by age group and sex as well the comparison of population sizes by aggregated age groups for Children, Adults, Older Adults, and Senior Citizens, the data indicates an aging population in Puerto Rico. From 1985 to 2022, the data indicates that the life expectancy increase, likely due to a combination of improved living conditions and medical advancements, and relative fertility has decreased. The middle aged population appears somewhat stable, suggesting a buffer population that supports individuals of the population in both the younger and older age groups. Calculations of the weekly death rate by age group and sex from 1985 to 2002 in the data set indicate that those of the ages 5-14, 20-29, and 30-44 had similar rates of mortality, and that the lowest death rates were observed for those of ages 5-14 and the highest death rates were observed for those of ages 70 and above. These trends in mortality rate for children and Young to Middle Aged Adults are likely due to reduced infant mortality and improvements in health care, and the trends for Older Adults and Senior Citizens can be attributed to age related chronic conditions. 
+
+The final Poisson model selected using AIC and Likelihood Ratio Tests indicated the estimates of mortality were significantly associated with age, sex, interaction terms representing effect modification of age by sex, as well as temporal elements such as week of the year as well as day. The model was first fitted on data from 1985 to 2017, and weeks with high outlyingness in terms of observed mortality and excess mortality were identified. When cross-referenced with major public health incidents in Puerto Rico, these dates identified Hurricane Maria, September 20, 2017, as well as Hurricane Georges, September 21, 1998. The effects of these hurricanes were seen in large values of excess mortality over the days and weeks following these disasters, indicating that effects of such disasters are not always immediate. The peaks in excess mortality themselves were not necessarily on the week or date of the incident itself, but were often delayed. This is likely due to a combination of delayed and inaccurate reporting in deaths immediately after these disasters,as well as the fact that such disasters have both direct and indirect effects on mortality, the latter of which may take longer to manifest. 
+
+The Poisson model was then refit without the weeks where mortality was deemed as being influenced by Hurricane Maria and Georges, and predictions were made on mortality for 2017 and 2018. The trends in the excess mortality estimations made using the estimated mortality predicted by the selected model indicate large values right after and in the around 6 months following Hurricane Maria. The values for excess mortality before and after this interval are much smaller, and trend at around 0. This is indicative of the direct, as well as delayed and indirect effects of Hurricane Maria on population mortality, and our modeling approach appears to capture this well, as there are no similar trends in the other time points. In comparing the trends in estimates of excess mortality by age and sex for the same time period, the age groups 55-59 and 65 and above have the highest excess mortality, while those aged 5-19 have the lowest excess mortality. In looking specifically at excess mortality in the immediate aftermath of Hurricane Maria, for those below 70 and those 75-79, the excess mortality was higher for males than females, while the opposite was true for those 80 and above. The peaks in excess mortality for those in younger age groups were generally more delayed than for those in older age groups. These trends are likely due to the greater physical resilience to the effects of the Hurricane in younger, non-infant, individuals, and the delayed effects on mortality are likely due to disruptions in health care services.
+
+Furthermore, as described in the results section, the largest discrepancy in the count of deaths between the `excessmort` package and the New York Times report is in November of 2017, with 1018 deaths being underreported. As the New York Times Report does not include deaths for December of 2017, this report was likely compiled in or around December of 2017. Additionally, the discrepancies between the two data sources (`excessmort` - NYT) is positive and starts increasing from September to November of 2017. This increase in the discrepancy can be attributed to Hurricane Maria as well as the time at which the NYT report was likely compiled, as the updating of the death toll would have been slow and inaccurate in the wake of such a catastrophic natural disaster.
